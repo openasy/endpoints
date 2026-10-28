@@ -1,0 +1,36 @@
+# Endpoints. osquery on each laptop and workstation enrols with a secret, runs the query pack it was given and sends
+# what it finds; Endpoints checks it against the policy and lists the software (ADR 0065).
+#
+#   openssl rand -hex 32 > openasy-kek   # Endpoints' key: its sign-in secrets (ADR 0021). Keep it with your backups
+#   docker compose up -d
+#   docker compose logs endpoints | grep 'no owner yet'   # the one-time link that creates the owner account
+#
+# osquery connects only over HTTPS: devices reach Endpoints through a TLS proxy, at ENDPOINTS_PUBLIC_URL (ADR 0026).
+services:
+  endpoints:
+    image: ghcr.io/openasy/endpoints:0.1.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    ports:
+      - "127.0.0.1:8080:8080" # UI, API and osquery's endpoints; put a TLS proxy in front to reach it from elsewhere
+    volumes:
+      - endpoints-data:/data # SQLite database: devices, their checks and software, the policy and the audit log
+    secrets:
+      - openasy-kek # mounted at /run/secrets/openasy-kek; Endpoints does not start without it
+    environment:
+      # The address people open Endpoints at and osquery connects to: the https:// URL of the TLS proxy in front.
+      ENDPOINTS_PUBLIC_URL: ${ENDPOINTS_PUBLIC_URL:-http://localhost:8080}
+      # Sign in with your identity provider (OIDC), see the README:
+      # OPENASY_OIDC_ISSUER: https://login.example.com
+      # OPENASY_OIDC_CLIENT_ID: endpoints
+      # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
+
+volumes:
+  endpoints-data:
+
+secrets:
+  openasy-kek:
+    file: ./openasy-kek

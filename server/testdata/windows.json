@@ -1,0 +1,97 @@
+[
+  {
+    "snapshot": [
+      {
+        "computer_name": "WIN-MWILSON-01",
+        "cpu_brand": "13th Gen Intel(R) Core(TM) i7-1365U",
+        "hardware_model": "Latitude 7440",
+        "hardware_serial": "FAKE7440",
+        "hardware_vendor": "Dell Inc.",
+        "hostname": "WIN-MWILSON-01",
+        "os_build": "22631",
+        "os_major": "10",
+        "os_minor": "0",
+        "os_name": "Microsoft Windows 11 Pro",
+        "os_patch": "",
+        "os_platform": "windows",
+        "os_version": "10.0.22631",
+        "osquery_version": "5.24.0",
+        "physical_memory": "34359738368",
+        "uuid": "4C4C4544-0042-3510-8058-B4C04F4E3233"
+      }
+    ],
+    "action": "snapshot",
+    "name": "endpoints_inventory",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "uid": "1001", "username": "mwilson", "description": "Morgan Wilson" }],
+    "action": "snapshot",
+    "name": "endpoints_users_windows",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "drive_letter": "C:", "protection_status": "1", "conversion_status": "1", "encryption_method": "XTS_AES_128" }],
+    "action": "snapshot",
+    "name": "endpoints_encryption_windows",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "firewall": "Good" }],
+    "action": "snapshot",
+    "name": "endpoints_firewall_windows",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "data": "900" }],
+    "action": "snapshot",
+    "name": "endpoints_screenlock_windows",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [
+      { "name": "Google Chrome", "version": "156.0.8078.48", "publisher": "Google LLC", "identifier": "{6C1F9B8E-0000-0000-0000-000000000001}" },
+      { "name": "Slack", "version": "4.47.69", "publisher": "Slack Technologies Inc.", "identifier": "" },
+      { "name": "7-Zip 24.08 (x64)", "version": "24.08", "publisher": "Igor Pavlov", "identifier": "" }
+    ],
+    "action": "snapshot",
+    "name": "endpoints_software_windows",
+    "hostIdentifier": "4C4C4544-0042-3510-8058-B4C04F4E3233",
+    "calendarTime": "Wed Oct 28 11:47:10 2026 UTC",
+    "unixTime": 1793188030,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  }
+]

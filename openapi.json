@@ -1,0 +1,2929 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "OpenAsy Endpoints API",
+    "version": "0.1.0",
+    "summary": "Every laptop and workstation, encrypted, updated and locked, read by osquery on each device.",
+    "description": "Every screen of Endpoints uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only; anything removed is deprecated first (ADR 0024). Errors use Problem Details (RFC 9457).\n\nEach operation names the role it needs (`x-openasy-role`: viewer, editor, admin; ADR 0003) and takes a session or an API token. The two `/api/v1/osquery` operations are osquery's own protocol: osquery calls them with its enrolment secret or node key in the body, and they answer in osquery's shape. Endpoints never sends a device a query; the queries are in the pack on the device (ADR 0065).\n\nSign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "This Endpoints"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Devices",
+      "description": "Laptops and workstations that enrolled, and their checks."
+    },
+    {
+      "name": "Compliance",
+      "description": "The policy, what fails it, and its exceptions."
+    },
+    {
+      "name": "Software",
+      "description": "What is installed, and where."
+    },
+    {
+      "name": "Enrolment",
+      "description": "Secrets osquery enrols with, and what to put on a device."
+    },
+    {
+      "name": "osquery",
+      "description": "What osquery on each device calls."
+    },
+    {
+      "name": "Audit",
+      "description": "The record of every enrolment and change."
+    },
+    {
+      "name": "Product",
+      "description": "Version and overview of this Endpoints."
+    }
+  ],
+  "paths": {
+    "/api/v1/version": {
+      "get": {
+        "operationId": "version",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Product and version",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "This Endpoints.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "tags": [
+          "Product"
+        ],
+        "summary": "The install's other products",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. From OPENASY_PRODUCTS, for the product switcher.",
+        "responses": {
+          "200": {
+            "description": "The products.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/summary": {
+      "get": {
+        "operationId": "summary",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Overview",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. How many devices there are, by posture, how many are stale, and each check's counts.",
+        "responses": {
+          "200": {
+            "description": "The overview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "liveness",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Liveness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The process is running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readiness",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Readiness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The database answers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Prometheus metrics",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Metrics in the Prometheus text format.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/osquery/enroll": {
+      "post": {
+        "operationId": "osqueryEnroll",
+        "tags": [
+          "osquery"
+        ],
+        "summary": "Enrol a device (osquery's TLS enroll plugin)",
+        "security": [],
+        "description": "Called by osquery, not by people: `--enroll_tls_endpoint`. The enrolment secret is in the body, as osquery sends it. A refused enrolment is answered 200 with `node_invalid: true`, as osquery expects, and osquery tries again later. A hardware UUID that is enrolled already is refused until an admin allows it to enrol again.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OsqueryEnroll"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A node key, or node_invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OsqueryReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/osquery/log": {
+      "post": {
+        "operationId": "osqueryLog",
+        "tags": [
+          "osquery"
+        ],
+        "summary": "Send results (osquery's TLS logger plugin)",
+        "security": [],
+        "description": "Called by osquery, not by people: `--logger_tls_endpoint`, gzipped with `--logger_tls_compress`. The node key is in the body. Snapshots of the pack's queries are kept; other results and status logs are dropped. An unknown node key is answered with `node_invalid: true`, which makes osquery enrol again. At most 16 MiB unpacked.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OsqueryLog"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Taken, or node_invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OsqueryReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Devices",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Every device that enrolled, with its posture and checks.",
+        "responses": {
+          "200": {
+            "description": "The devices.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{id}": {
+      "get": {
+        "operationId": "getDevice",
+        "tags": [
+          "Devices"
+        ],
+        "summary": "A device",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. With each check and its exception, the local accounts and how much software it has.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "put": {
+        "operationId": "setDeviceOwner",
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Set who uses a device",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "editor",
+        "description": "Needs the editor role. The owner is free text, such as an email address; null or an empty string clears it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceOwner"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The device.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeDevice",
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Forget a device",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. Its node key stops working and what it reported is deleted. osquery on it enrols again as a new device while its secret is valid.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{id}/reenroll": {
+      "post": {
+        "operationId": "allowReenrol",
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Let a device enrol again",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. For a device whose osquery lost its node key, such as after a reinstall: the same hardware UUID may enrol once within 7 days, and its old node key stops working then.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The device.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{id}/software": {
+      "get": {
+        "operationId": "listDeviceSoftware",
+        "tags": [
+          "Software"
+        ],
+        "summary": "A device's software",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its software.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSoftware"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/software": {
+      "get": {
+        "operationId": "listSoftware",
+        "tags": [
+          "Software"
+        ],
+        "summary": "Software across devices",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Each application by name, with its versions, the newest first, and how many devices are not on the newest any device has. The 1,000 on most devices; total counts all.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Part of the name or publisher.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "description": "Only devices of this platform.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "darwin",
+                "windows",
+                "linux"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The applications.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SoftwareTitles"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/software/installs": {
+      "get": {
+        "operationId": "listInstalls",
+        "tags": [
+          "Software"
+        ],
+        "summary": "Where an application is installed",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "The application's name, as the software list gives it.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Each install.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Installs"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/compliance": {
+      "get": {
+        "operationId": "compliance",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "Compliance",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Each check's counts, postures by platform, and every failing check on every device, blocked first.",
+        "responses": {
+          "200": {
+            "description": "Compliance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Compliance"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/policy": {
+      "get": {
+        "operationId": "getPolicy",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "The policy",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role.",
+        "responses": {
+          "200": {
+            "description": "The policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "put": {
+        "operationId": "savePolicy",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "Change the policy",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. Fields left out keep their value. Every device is checked again against what it already reported; a check that starts failing now starts its grace period now.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The policy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Policy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/exceptions": {
+      "get": {
+        "operationId": "listExceptions",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "Exceptions",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Active ones first.",
+        "responses": {
+          "200": {
+            "description": "The exceptions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExceptionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createException",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "Add an exception",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. A failing check on one device counts as passing until it ends, at most a year on. One active exception per device and check.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewException"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The exception.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exception"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/exceptions/{id}": {
+      "delete": {
+        "operationId": "deleteException",
+        "tags": [
+          "Compliance"
+        ],
+        "summary": "End an exception",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The exception's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Ended."
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/enroll-secrets": {
+      "get": {
+        "operationId": "listEnrollSecrets",
+        "tags": [
+          "Enrolment"
+        ],
+        "summary": "Enrolment secrets",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Never the secret itself: a fingerprint, its expiry and how many devices enrolled with it.",
+        "responses": {
+          "200": {
+            "description": "The secrets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollSecretList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEnrollSecret",
+        "tags": [
+          "Enrolment"
+        ],
+        "summary": "Make an enrolment secret",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. The secret is in this answer only. Many devices may enrol with it until it expires, 90 days on unless set.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEnrollSecret"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The secret, once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewEnrollSecretResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/enroll-secrets/{id}/revoke": {
+      "post": {
+        "operationId": "revokeEnrollSecret",
+        "tags": [
+          "Enrolment"
+        ],
+        "summary": "Revoke an enrolment secret",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "description": "Needs the admin role. No new device enrols with it. Devices that enrolled with it keep their own node keys.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The enrolment secret's id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollSecret"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/setup": {
+      "get": {
+        "operationId": "setup",
+        "tags": [
+          "Enrolment"
+        ],
+        "summary": "What to put on a device",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. The osquery flags and the steps for each platform, and the query pack. The enrolment secret is not in it.",
+        "responses": {
+          "200": {
+            "description": "The setup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Setup"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "operationId": "listAudit",
+        "tags": [
+          "Audit"
+        ],
+        "summary": "The audit log",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "description": "Needs the viewer role. Every enrolment, refused enrolment, change to devices, the policy, exceptions and secrets, and sign-in, newest first. Rows are never changed or removed.",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "device",
+                "secret",
+                "policy",
+                "exception",
+                "auth"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "next from the page before.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-openasy-session",
+        "description": "The browser session after signing in (`openasy-session` when Endpoints runs on plain http://localhost). Requests that change something must come from the Endpoints origin."
+      },
+      "apiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API token created under Settings, API tokens (`oa_endpoints_...`): one role, always an expiry (ADR 0003)."
+      },
+      "adminToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Only when Endpoints is started by its tests or a local script: one shared token with the admin role. A production install does not have it."
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "An error, as RFC 9457 Problem Details.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid-json",
+              "invalid-body",
+              "conflict",
+              "not-found",
+              "payload-too-large",
+              "internal-error",
+              "unauthenticated",
+              "forbidden",
+              "invalid-credentials",
+              "mfa-required",
+              "mfa-setup-required",
+              "cross-site",
+              "rate-limited"
+            ],
+            "description": "Stable; match on this."
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductLink": {
+        "type": "object",
+        "required": [
+          "id",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductList": {
+        "type": "object",
+        "required": [
+          "products"
+        ],
+        "properties": {
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLink"
+            }
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "Version": {
+        "type": "object",
+        "required": [
+          "product",
+          "version"
+        ],
+        "properties": {
+          "product": {
+            "type": "string",
+            "const": "endpoints"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "OsqueryEnroll": {
+        "type": "object",
+        "required": [
+          "enroll_secret"
+        ],
+        "properties": {
+          "enroll_secret": {
+            "type": "string"
+          },
+          "host_identifier": {
+            "type": "string",
+            "description": "The hardware UUID, with --host_identifier=uuid."
+          },
+          "platform_type": {
+            "type": "string"
+          },
+          "host_details": {
+            "type": "object",
+            "description": "osquery's system_info, os_version, osquery_info and platform_info."
+          }
+        }
+      },
+      "OsqueryLog": {
+        "type": "object",
+        "required": [
+          "node_key",
+          "log_type"
+        ],
+        "properties": {
+          "node_key": {
+            "type": "string"
+          },
+          "log_type": {
+            "type": "string",
+            "enum": [
+              "result",
+              "status"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Result logs: snapshots of the pack's queries, with name, snapshot, unixTime and decorations."
+          }
+        }
+      },
+      "OsqueryReply": {
+        "type": "object",
+        "required": [
+          "node_invalid"
+        ],
+        "properties": {
+          "node_key": {
+            "type": "string",
+            "description": "After enrolment: the device's own key, sent with every result."
+          },
+          "node_invalid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Check": {
+        "type": "object",
+        "required": [
+          "check",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "enum": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "unknown",
+              "not-applicable"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "Failing": {
+        "type": "object",
+        "required": [
+          "check",
+          "detail",
+          "since",
+          "graceEndsAt",
+          "blocked"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "enum": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "graceEndsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the device becomes non-compliant for it; null when it blocks at once."
+          },
+          "blocked": {
+            "type": "boolean",
+            "description": "It counts against the device now: the check blocks, or its grace period ended."
+          }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "name",
+          "hostname",
+          "serial",
+          "hardware",
+          "platform",
+          "os",
+          "osqueryVersion",
+          "packVersion",
+          "owner",
+          "enrolledAt",
+          "lastSeenAt",
+          "stale",
+          "reenrollUntil",
+          "posture",
+          "failing",
+          "checks"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string",
+            "description": "The hardware UUID osquery reports; a device is found again by it."
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "hardware": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "model",
+              "cpu",
+              "memoryBytes"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "cpu": {
+                "type": "string"
+              },
+              "memoryBytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "darwin",
+              "windows",
+              "linux",
+              "other"
+            ]
+          },
+          "os": {
+            "type": "object",
+            "required": [
+              "name",
+              "version",
+              "build",
+              "platform"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "build": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string",
+                "description": "osquery's os_version.platform, such as darwin, windows, ubuntu or debian."
+              }
+            }
+          },
+          "osqueryVersion": {
+            "type": "string"
+          },
+          "packVersion": {
+            "type": "string",
+            "description": "The version of the query pack it runs; empty until its first result."
+          },
+          "owner": {
+            "type": "string"
+          },
+          "enrolledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "It has not checked in within the policy's stale days."
+          },
+          "reenrollUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Until when it may enrol again, when an admin allowed it."
+          },
+          "posture": {
+            "type": "string",
+            "enum": [
+              "compliant",
+              "at-risk",
+              "non-compliant",
+              "pending"
+            ],
+            "description": "pending while osquery has not answered a check that applies, and nothing fails."
+          },
+          "failing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Failing"
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Check"
+            }
+          }
+        }
+      },
+      "DeviceList": {
+        "type": "object",
+        "required": [
+          "devices"
+        ],
+        "properties": {
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          }
+        }
+      },
+      "DeviceDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Device"
+          },
+          {
+            "type": "object",
+            "required": [
+              "checks",
+              "users",
+              "software",
+              "enrollSecret"
+            ],
+            "properties": {
+              "checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "check",
+                    "status",
+                    "detail",
+                    "since",
+                    "enabled",
+                    "onFailure",
+                    "exception"
+                  ],
+                  "properties": {
+                    "check": {
+                      "type": "string",
+                      "enum": [
+                        "disk-encryption",
+                        "os-version",
+                        "firewall",
+                        "screen-lock"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "unknown",
+                        "not-applicable"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "since": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Since when it has this status."
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "onFailure": {
+                      "type": "string",
+                      "enum": [
+                        "block",
+                        "grace"
+                      ]
+                    },
+                    "exception": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "reason",
+                            "expiresAt"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "reason": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "uid",
+                    "username",
+                    "description"
+                  ],
+                  "properties": {
+                    "uid": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "software": {
+                "type": "integer",
+                "description": "How many applications and packages it has."
+              },
+              "enrollSecret": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "DeviceOwner": {
+        "type": "object",
+        "required": [
+          "owner"
+        ],
+        "properties": {
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          }
+        }
+      },
+      "DeviceSoftware": {
+        "type": "object",
+        "required": [
+          "software"
+        ],
+        "properties": {
+          "software": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "source",
+                "name",
+                "version",
+                "publisher",
+                "identifier",
+                "path"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "macos",
+                    "windows",
+                    "deb",
+                    "rpm"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "publisher": {
+                  "type": "string"
+                },
+                "identifier": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SoftwareTitles": {
+        "type": "object",
+        "required": [
+          "total",
+          "titles"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "titles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "publisher",
+                "platforms",
+                "devices",
+                "newest",
+                "notOnNewest",
+                "versions"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "publisher": {
+                  "type": "string"
+                },
+                "platforms": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "devices": {
+                  "type": "integer"
+                },
+                "newest": {
+                  "type": "string"
+                },
+                "notOnNewest": {
+                  "type": "integer",
+                  "description": "Devices without the newest version any device has. A sign, not an advisory."
+                },
+                "versions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "version",
+                      "devices"
+                    ],
+                    "properties": {
+                      "version": {
+                        "type": "string"
+                      },
+                      "devices": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Installs": {
+        "type": "object",
+        "required": [
+          "installs"
+        ],
+        "properties": {
+          "installs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "device",
+                "version",
+                "path"
+              ],
+              "properties": {
+                "device": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "owner",
+                    "platform"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "owner": {
+                      "type": "string"
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": [
+                        "darwin",
+                        "windows",
+                        "linux",
+                        "other"
+                      ]
+                    }
+                  }
+                },
+                "version": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CheckStats": {
+        "type": "object",
+        "required": [
+          "check",
+          "enabled",
+          "onFailure",
+          "passing",
+          "failing",
+          "excepted",
+          "unknown",
+          "notApplicable"
+        ],
+        "properties": {
+          "check": {
+            "type": "string",
+            "enum": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "onFailure": {
+            "type": "string",
+            "enum": [
+              "block",
+              "grace"
+            ]
+          },
+          "passing": {
+            "type": "integer"
+          },
+          "failing": {
+            "type": "integer"
+          },
+          "excepted": {
+            "type": "integer",
+            "description": "Failing, with an active exception."
+          },
+          "unknown": {
+            "type": "integer"
+          },
+          "notApplicable": {
+            "type": "integer"
+          }
+        }
+      },
+      "Compliance": {
+        "type": "object",
+        "required": [
+          "checks",
+          "platforms",
+          "failing"
+        ],
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckStats"
+            }
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "platform",
+                "compliant",
+                "at-risk",
+                "non-compliant",
+                "pending"
+              ],
+              "properties": {
+                "platform": {
+                  "type": "string",
+                  "enum": [
+                    "darwin",
+                    "windows",
+                    "linux"
+                  ]
+                },
+                "compliant": {
+                  "type": "integer"
+                },
+                "at-risk": {
+                  "type": "integer"
+                },
+                "non-compliant": {
+                  "type": "integer"
+                },
+                "pending": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "failing": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Failing"
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "device"
+                  ],
+                  "properties": {
+                    "device": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "owner",
+                        "platform",
+                        "os"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": "string"
+                        },
+                        "platform": {
+                          "type": "string",
+                          "enum": [
+                            "darwin",
+                            "windows",
+                            "linux",
+                            "other"
+                          ]
+                        },
+                        "os": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Policy": {
+        "type": "object",
+        "required": [
+          "checks",
+          "graceDays",
+          "staleDays",
+          "minimum",
+          "screenLockMinutes",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "properties": {
+          "checks": {
+            "type": "object",
+            "required": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ],
+            "properties": {
+              "disk-encryption": {
+                "type": "object",
+                "required": [
+                  "enabled",
+                  "onFailure"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "onFailure": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "grace"
+                    ]
+                  }
+                }
+              },
+              "os-version": {
+                "type": "object",
+                "required": [
+                  "enabled",
+                  "onFailure"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "onFailure": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "grace"
+                    ]
+                  }
+                }
+              },
+              "firewall": {
+                "type": "object",
+                "required": [
+                  "enabled",
+                  "onFailure"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "onFailure": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "grace"
+                    ]
+                  }
+                }
+              },
+              "screen-lock": {
+                "type": "object",
+                "required": [
+                  "enabled",
+                  "onFailure"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "onFailure": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "grace"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "graceDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30,
+            "description": "How long a failing check with onFailure grace leaves a device at risk."
+          },
+          "staleDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "minimum": {
+            "type": "object",
+            "required": [
+              "macos",
+              "windowsBuild",
+              "linux"
+            ],
+            "properties": {
+              "macos": {
+                "type": "string",
+                "description": "Such as 15.0."
+              },
+              "windowsBuild": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 99999,
+                "description": "Such as 22631, Windows 11 23H2."
+              },
+              "linux": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "By osquery's os_version.platform: {\"ubuntu\": \"22.04\"}. A distribution not named is not checked."
+              }
+            }
+          },
+          "screenLockMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PolicyChange": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "checks": {
+            "type": "object",
+            "description": "Some checks, each with enabled and onFailure, both optional.",
+            "additionalProperties": {
+              "type": "object",
+              "required": [],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "onFailure": {
+                  "type": "string",
+                  "enum": [
+                    "block",
+                    "grace"
+                  ]
+                }
+              }
+            }
+          },
+          "graceDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30,
+            "description": "How long a failing check with onFailure grace leaves a device at risk."
+          },
+          "staleDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "minimum": {
+            "type": "object",
+            "required": [],
+            "properties": {
+              "macos": {
+                "type": "string",
+                "description": "Such as 15.0."
+              },
+              "windowsBuild": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 99999,
+                "description": "Such as 22631, Windows 11 23H2."
+              },
+              "linux": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "By osquery's os_version.platform: {\"ubuntu\": \"22.04\"}. A distribution not named is not checked."
+              }
+            }
+          },
+          "screenLockMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          }
+        }
+      },
+      "Exception": {
+        "type": "object",
+        "required": [
+          "id",
+          "device",
+          "check",
+          "reason",
+          "expiresAt",
+          "active",
+          "createdBy",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "device": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "check": {
+            "type": "string",
+            "enum": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExceptionList": {
+        "type": "object",
+        "required": [
+          "exceptions"
+        ],
+        "properties": {
+          "exceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Exception"
+            }
+          }
+        }
+      },
+      "NewException": {
+        "type": "object",
+        "required": [
+          "deviceId",
+          "check",
+          "reason",
+          "days"
+        ],
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "check": {
+            "type": "string",
+            "enum": [
+              "disk-encryption",
+              "os-version",
+              "firewall",
+              "screen-lock"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          }
+        }
+      },
+      "EnrollSecret": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "fingerprint",
+          "createdAt",
+          "createdBy",
+          "expiresAt",
+          "revokedAt",
+          "lastUsedAt",
+          "status",
+          "devices"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ]
+          },
+          "devices": {
+            "type": "integer"
+          }
+        }
+      },
+      "EnrollSecretList": {
+        "type": "object",
+        "required": [
+          "secrets"
+        ],
+        "properties": {
+          "secrets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnrollSecret"
+            }
+          }
+        }
+      },
+      "NewEnrollSecret": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "expiresInDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "default": 90
+          }
+        }
+      },
+      "NewEnrollSecretResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EnrollSecret"
+          },
+          {
+            "type": "object",
+            "required": [
+              "secret"
+            ],
+            "properties": {
+              "secret": {
+                "type": "string",
+                "description": "Shown this once. Put it in the enroll_secret file on each device."
+              }
+            }
+          }
+        ]
+      },
+      "Setup": {
+        "type": "object",
+        "required": [
+          "publicUrl",
+          "tlsHostname",
+          "https",
+          "packVersion",
+          "pack",
+          "platforms"
+        ],
+        "properties": {
+          "publicUrl": {
+            "type": "string"
+          },
+          "tlsHostname": {
+            "type": "string"
+          },
+          "https": {
+            "type": "boolean",
+            "description": "false when ENDPOINTS_PUBLIC_URL is not https://: osquery connects only over TLS."
+          },
+          "packVersion": {
+            "type": "string"
+          },
+          "pack": {
+            "type": "string",
+            "description": "osquery.conf, the query pack: the same on every device."
+          },
+          "platforms": {
+            "type": "object",
+            "required": [
+              "darwin",
+              "linux",
+              "windows"
+            ],
+            "properties": {
+              "darwin": {
+                "type": "object",
+                "required": [
+                  "flags",
+                  "steps"
+                ],
+                "properties": {
+                  "flags": {
+                    "type": "string",
+                    "description": "osquery.flags."
+                  },
+                  "steps": {
+                    "type": "string",
+                    "description": "What to run on the device."
+                  }
+                }
+              },
+              "linux": {
+                "type": "object",
+                "required": [
+                  "flags",
+                  "steps"
+                ],
+                "properties": {
+                  "flags": {
+                    "type": "string",
+                    "description": "osquery.flags."
+                  },
+                  "steps": {
+                    "type": "string",
+                    "description": "What to run on the device."
+                  }
+                }
+              },
+              "windows": {
+                "type": "object",
+                "required": [
+                  "flags",
+                  "steps"
+                ],
+                "properties": {
+                  "flags": {
+                    "type": "string",
+                    "description": "osquery.flags."
+                  },
+                  "steps": {
+                    "type": "string",
+                    "description": "What to run on the device."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "required": [
+          "devices",
+          "postures",
+          "stale",
+          "checks",
+          "enrollSecrets",
+          "packVersion",
+          "outdatedPack"
+        ],
+        "properties": {
+          "devices": {
+            "type": "integer"
+          },
+          "postures": {
+            "type": "object",
+            "required": [
+              "compliant",
+              "at-risk",
+              "non-compliant",
+              "pending"
+            ],
+            "properties": {
+              "compliant": {
+                "type": "integer"
+              },
+              "at-risk": {
+                "type": "integer"
+              },
+              "non-compliant": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              }
+            }
+          },
+          "stale": {
+            "type": "integer"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CheckStats"
+            }
+          },
+          "enrollSecrets": {
+            "type": "integer",
+            "description": "Active enrolment secrets."
+          },
+          "packVersion": {
+            "type": "string"
+          },
+          "outdatedPack": {
+            "type": "integer",
+            "description": "Devices that run an older query pack."
+          }
+        }
+      },
+      "AuditEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "actor",
+          "action",
+          "target",
+          "result",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "Such as device.enrol, device.remove, device.owner, policy.update, exception.create, secret.create, secret.revoke or auth.sign-in."
+          },
+          "target": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "success",
+              "denied"
+            ],
+            "description": "denied for a refused enrolment or sign-in."
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditPage": {
+        "type": "object",
+        "required": [
+          "events",
+          "next"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as cursor for the next page; null on the last."
+          }
+        }
+      }
+    }
+  }
+}

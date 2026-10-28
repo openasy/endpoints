@@ -1,0 +1,105 @@
+[
+  {
+    "snapshot": [
+      { "encrypted": "1", "filevault_status": "on", "path": "/", "type": "APFS Encryption" },
+      { "encrypted": "1", "filevault_status": "on", "path": "/System/Volumes/Data", "type": "APFS Encryption" }
+    ],
+    "action": "snapshot",
+    "name": "endpoints_encryption_macos",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:35 2026 UTC",
+    "unixTime": 1793188055,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "global_state": "0" }],
+    "action": "snapshot",
+    "name": "endpoints_firewall_macos",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:35 2026 UTC",
+    "unixTime": 1793188055,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [
+      {
+        "computer_name": "MBP-DKIM-14",
+        "cpu_brand": "Apple M4 Pro",
+        "hardware_model": "Mac16,7",
+        "hardware_serial": "C02FAKE0SN1",
+        "hardware_vendor": "Apple Inc.",
+        "hostname": "mbp-dkim",
+        "os_build": "25G83",
+        "os_major": "26",
+        "os_minor": "6",
+        "os_name": "macOS",
+        "os_patch": "2",
+        "os_platform": "darwin",
+        "os_version": "26.6.2",
+        "osquery_version": "5.24.0",
+        "physical_memory": "25769803776",
+        "uuid": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77"
+      }
+    ],
+    "action": "snapshot",
+    "name": "endpoints_inventory",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:35 2026 UTC",
+    "unixTime": 1793188055,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "enabled": "1", "grace_period": "0" }],
+    "action": "snapshot",
+    "name": "endpoints_screenlock_macos",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:35 2026 UTC",
+    "unixTime": 1793188055,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [
+      { "identifier": "com.google.android.studio", "name": "Android Studio.app", "path": "/Applications/Android Studio.app", "version": "2026.1" },
+      { "identifier": "com.docker.docker", "name": "Docker.app", "path": "/Applications/Docker.app", "version": "4.96.3" },
+      { "identifier": "org.mozilla.firefox", "name": "Firefox.app", "path": "/Applications/Firefox.app", "version": "158.0" },
+      { "identifier": "com.google.Chrome", "name": "Google Chrome.app", "path": "/Applications/Google Chrome.app", "version": "156.0.8078.48" },
+      { "identifier": "com.apple.Safari", "name": "Safari.app", "path": "/Applications/Safari.app", "version": "27.0" },
+      { "identifier": "com.tinyspeck.slackmacgap", "name": "Slack.app", "path": "/Applications/Slack.app", "version": "4.52.182" },
+      { "identifier": "com.microsoft.VSCode", "name": "Visual Studio Code.app", "path": "/Applications/Visual Studio Code.app", "version": "1.143.1" },
+      { "identifier": "us.zoom.xos", "name": "zoom.us.app", "path": "/Applications/zoom.us.app", "version": "7.0.6 (84834)" }
+    ],
+    "action": "snapshot",
+    "name": "endpoints_software_macos",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:36 2026 UTC",
+    "unixTime": 1793188056,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  },
+  {
+    "snapshot": [{ "uid": "501", "username": "dkim", "description": "Deniz Kim" }],
+    "action": "snapshot",
+    "name": "endpoints_users",
+    "hostIdentifier": "5A1C3E2B-7D4F-4C11-9B8A-2E6F0D1C9A77",
+    "calendarTime": "Wed Oct 28 11:47:36 2026 UTC",
+    "unixTime": 1793188056,
+    "epoch": 0,
+    "counter": 0,
+    "numerics": false,
+    "decorations": { "endpoints_pack": "1" }
+  }
+]
