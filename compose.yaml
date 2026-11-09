@@ -8,7 +8,7 @@
 # osquery connects only over HTTPS: devices reach Endpoints through a TLS proxy, at ENDPOINTS_PUBLIC_URL (ADR 0026).
 services:
   endpoints:
-    image: ghcr.io/openasy/endpoints:0.1.0
+    image: ghcr.io/openasy/endpoints:0.1.1
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]

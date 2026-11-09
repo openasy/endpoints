@@ -1,6 +1,6 @@
 {
   "name": "@openasy/endpoints",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "OpenAsy Endpoints: every laptop and workstation, encrypted, updated and locked, read by osquery on each device.",
   "license": "AGPL-3.0-only",

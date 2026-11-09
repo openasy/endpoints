@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "OpenAsy Endpoints API",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "summary": "Every laptop and workstation, encrypted, updated and locked, read by osquery on each device.",
     "description": "Every screen of Endpoints uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only; anything removed is deprecated first (ADR 0024). Errors use Problem Details (RFC 9457).\n\nEach operation names the role it needs (`x-openasy-role`: viewer, editor, admin; ADR 0003) and takes a session or an API token. The two `/api/v1/osquery` operations are osquery's own protocol: osquery calls them with its enrolment secret or node key in the body, and they answer in osquery's shape. Endpoints never sends a device a query; the queries are in the pack on the device (ADR 0065).\n\nSign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
     "license": {
