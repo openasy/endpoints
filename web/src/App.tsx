@@ -80,7 +80,7 @@ import {
   type SoftwareTitle,
   type Summary,
 } from "./api.ts";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale, setViewerLocale } from "./i18n.ts";
 import { search } from "./search.ts";
 
 const PAGES = ["compliance", "software", "policy", "setup", "audit", "account", "members", "signin", "tokens", "about"] as const;
@@ -123,8 +123,8 @@ function useLoad<R>(call: Call, path: string) {
   return [data, load] as const;
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
+const when = (iso: string) => new Date(iso).toLocaleString(viewerLocale(), { dateStyle: "medium", timeStyle: "short" });
+const date = (iso: string) => new Date(iso).toLocaleDateString(viewerLocale(), { dateStyle: "medium" });
 
 /** Runs a change and reports its error, the way every form here does. */
 function useAction(after: () => void) {
@@ -1624,6 +1624,7 @@ export function App() {
   const installBrand = useInstallBrand();
   const [theme] = useThemePreference();
   const [locale] = useLocalePreference();
+  setViewerLocale(locale);
   return (
     // The install's brand from config/brand.env (ADR 0053); OpenAsy's own look where it sets none.
     <BrandProvider theme={theme} locale={locale} brand={{ name: "OpenAsy", organization: undefined, ...installBrand }} className="min-h-screen">
